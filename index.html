@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>かけ算くく マスター</title>
+<style>
+/* ===== リセット & ベース ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  overflow-x: hidden;
+  background: #fff8f0;
+  font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Kaku Gothic ProN', 'BIZ UDPGothic', sans-serif;
+  color: #333;
+  -webkit-tap-highlight-color: transparent;
+}
+/* ===== 画面共通 ===== */
+.screen {
+  display: none;
+  min-height: 100vh;
+  padding: 0 0 40px;
+  animation: fadeIn .25s ease;
+}
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ===== トップ画面 ===== */
+#screen-home {
+  background: linear-gradient(160deg, #fff0f5 0%, #fff8e1 60%, #e8f5e9 100%);
+}
+.home-header {
+  text-align: center;
+  padding: 28px 20px 12px;
+}
+.home-title {
+  font-size: 2rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #f06292, #ff8a65, #ffd54f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 2px;
+  line-height: 1.2;
+  animation: titlePulse 3s ease-in-out infinite;
+}
+@keyframes titlePulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.home-subtitle {
+  font-size: .85rem;
+  color: #f06292;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+/* トロフィーエリア */
+.trophy-area {
+  margin: 14px 16px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 18px 16px;
+  box-shadow: 0 4px 18px rgba(240,98,146,.15);
+  text-align: center;
+}
+.trophy-icon {
+  font-size: 3.2rem;
+  line-height: 1;
+  animation: trophySpin 4s ease-in-out infinite;
+}
+@keyframes trophySpin {
+  0%,100% { transform: rotate(-5deg) scale(1); }
+  50% { transform: rotate(5deg) scale(1.08); }
+}
+.trophy-name {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #f06292;
+  margin-top: 6px;
+}
+.trophy-msg {
+  font-size: .85rem;
+  color: #888;
+  margin: 4px 0 10px;
+}
+.trophy-stars-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.trophy-star-count {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #ffc107;
+}
+.trophy-star-max {
+  font-size: .9rem;
+  color: #aaa;
+  font-weight: 700;
+}
+.stars-progress {
+  flex: 1;
+  max-width: 120px;
+  height: 10px;
+  background: #f0e6ff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.stars-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd54f, #ffc107);
+  border-radius: 10px;
+  transition: width .6s ease;
+}
+
+/* 九九カードグリッド */
+.dan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 8px 14px 14px;
+}
+.dan-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 8px;
+  text-align: center;
+  box-shadow: 0 3px 12px rgba(0,0,0,.08);
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  border: 3px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.dan-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: var(--card-color, #f06292);
+  border-radius: 14px 14px 0 0;
+}
+.dan-card:active { transform: scale(.94); box-shadow: 0 1px 6px rgba(0,0,0,.1); }
+.dan-card-number {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--card-color, #f06292);
+  line-height: 1;
+}
+.dan-card-label {
+  font-size: .7rem;
+  color: #999;
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+.dan-card-stars {
+  font-size: 1rem;
+  letter-spacing: 1px;
+  margin: 4px 0;
+  min-height: 22px;
+}
+.dan-card-progress {
+  font-size: .65rem;
+  color: #888;
+  font-weight: 600;
+  min-height: 16px;
+}
+
+/* フッター */
+.home-footer {
+  padding: 10px 20px 20px;
+  text-align: center;
+}
+.btn-reset {
+  background: #fff;
+  color: #e57373;
+  border: 2px solid #e57373;
+  border-radius: 30px;
+  padding: 10px 28px;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.btn-reset:active { background: #e57373; color: #fff; }
+
+/* ===== 学習画面 ===== */
+#screen-study {
+  background: linear-gradient(160deg, #e8f5e9 0%, #f3e5f5 100%);
+}
+.study-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 16px 8px;
+  gap: 10px;
+}
+.btn-back {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  width: 42px; height: 42px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.btn-back:active { background: #f5f5f5; }
+.study-title-area {
+  flex: 1;
+}
+.study-dan-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #7b1fa2;
+}
+.study-stars-display {
+  font-size: 1rem;
+  color: #ffc107;
+}
+
+/* レベル選択 */
+.level-select-area {
+  padding: 8px 14px 16px;
+}
+.level-select-title {
+  font-size: .9rem;
+  font-weight: 700;
+  color: #888;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.level-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.level-item {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.07);
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  border: 3px solid transparent;
+}
+.level-item.cleared { border-color: #a5d6a7; }
+.level-item.available { border-color: #90caf9; }
+.level-item.locked { opacity: .5; cursor: default; background: #f5f5f5; }
+.level-item:not(.locked):active { transform: scale(.97); }
+.level-badge {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 900;
+  flex-shrink: 0;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+.level-item.cleared .level-badge { background: #e8f5e9; color: #2e7d32; }
+.level-item.locked .level-badge { background: #eeeeee; color: #aaa; }
+.level-info { flex: 1; }
+.level-name {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #333;
+}
+.level-desc {
+  font-size: .75rem;
+  color: #888;
+  margin-top: 2px;
+}
+.level-status {
+  font-size: .8rem;
+  font-weight: 700;
+}
+.level-item.cleared .level-status { color: #43a047; }
+.level-item.available .level-status { color: #1e88e5; }
+.level-item.locked .level-status { color: #bbb; }
+
+/* 学習ゲーム部分 */
+.game-area {
+  padding: 8px 14px 16px;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: .85rem;
+  font-weight: 700;
+  color: #666;
+}
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #64b5f6, #7986cb);
+  border-radius: 10px;
+  transition: width .4s ease;
+}
+.question-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  margin-bottom: 14px;
+}
+.question-formula {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #333;
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.question-reading {
+  font-size: .9rem;
+  color: #9c27b0;
+  font-weight: 700;
+  margin-top: 8px;
+  min-height: 22px;
+}
+.status-msg {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #555;
+  text-align: center;
+  margin: 10px 0;
+  min-height: 28px;
+}
+.recognition-result {
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  min-height: 44px;
+  color: #333;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recognition-result.correct { background: #e8f5e9; color: #2e7d32; }
+.recognition-result.wrong { background: #ffebee; color: #c62828; }
+.judge-icon {
+  font-size: 2rem;
+  text-align: center;
+  margin: 6px 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* ボタン群 */
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #66bb6a, #43a047);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(67,160,71,.35);
+  transition: transform .12s, box-shadow .12s;
+}
+.btn-primary:active { transform: scale(.96); box-shadow: 0 2px 8px rgba(67,160,71,.3); }
+.btn-secondary {
+  background: linear-gradient(135deg, #42a5f5, #1e88e5);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(30,136,229,.3);
+  transition: transform .12s;
+}
+.btn-secondary:active { transform: scale(.96); }
+.btn-tertiary {
+  background: #fff;
+  color: #888;
+  border: 2px solid #ddd;
+  border-radius: 30px;
+  padding: 12px;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-tertiary:active { background: #f5f5f5; }
+
+/* 代替モード選択ボタン */
+.alt-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 10px 0;
+}
+.btn-choice {
+  background: #fff;
+  border: 3px solid #90caf9;
+  border-radius: 16px;
+  padding: 14px 6px;
+  font-size: 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
+  color: #1565c0;
+  transition: background .12s, transform .12s;
+}
+.btn-choice:active { background: #e3f2fd; transform: scale(.94); }
+.btn-choice.correct-choice { background: #e8f5e9; border-color: #66bb6a; color: #2e7d32; }
+.btn-choice.wrong-choice { background: #ffebee; border-color: #ef9a9a; color: #c62828; }
+
+/* レベル結果表示 */
+.result-area {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  margin: 8px 14px;
+}
+.result-emoji {
+  font-size: 3.5rem;
+  animation: resultPop .5s cubic-bezier(.36,.07,.19,.97);
+}
+@keyframes resultPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.result-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  margin: 8px 0;
+}
+.result-title.success { color: #2e7d32; }
+.result-title.fail { color: #c62828; }
+.result-score {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 6px 0 14px;
+}
+.result-msg {
+  font-size: .9rem;
+  color: #888;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+.result-stars {
+  font-size: 1.8rem;
+  letter-spacing: 4px;
+  margin: 10px 0;
+}
+
+/* 認識中アニメーション */
+.rec-animation {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.rec-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #f06292;
+  animation: recBounce 1s ease-in-out infinite;
+}
+.rec-dot:nth-child(2) { animation-delay: .15s; }
+.rec-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes recBounce {
+  0%,80%,100% { transform: scale(.7); opacity: .6; }
+  40% { transform: scale(1.2); opacity: 1; }
+}
+
+/* レベル選択エリア内に戻るボタン */
+.level-back-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px 0;
+}
+.study-level-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #7b1fa2;
+  margin-left: 8px;
+}
+
+/* 非対応アラート */
+.no-speech-banner {
+  background: #fff3e0;
+  border: 2px solid #ffb74d;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: .8rem;
+  color: #e65100;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* スター増加アニメーション */
+@keyframes starPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+.star-pop { animation: starPop .5s ease; }
+
+/* ポップ演出オーバーレイ */
+.pop-overlay {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: rgba(255,255,255,.95);
+  border-radius: 24px;
+  padding: 30px 40px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,.2);
+  z-index: 1000;
+  transition: transform .3s cubic-bezier(.36,.07,.19,.97), opacity .3s;
+  pointer-events: none;
+  opacity: 0;
+}
+.pop-overlay.show {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.pop-overlay-emoji { font-size: 3rem; }
+.pop-overlay-text { font-size: 1.2rem; font-weight: 900; color: #333; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ===== トップ画面 ===== -->
+<div id="screen-home" class="screen active">
+  <div class="home-header">
+    <div class="home-title">かけ算くく マスター</div>
+    <div class="home-subtitle">⭐ くくをおぼえて ほしをあつめよう！</div>
+  </div>
+
+  <!-- トロフィーエリア -->
+  <div class="trophy-area" id="trophy-area"></div>
+
+  <!-- 九九カードグリッド -->
+  <div class="dan-grid" id="dan-grid"></div>
+
+  <!-- フッター -->
+  <div class="home-footer">
+    <button class="btn-reset" onclick="resetProgress()" aria-label="記録をリセット">
+      🗑️ きろくをリセット
+    </button>
+  </div>
+</div>
+
+<!-- ===== 学習画面 ===== -->
+<div id="screen-study" class="screen">
+  <div id="study-content"></div>
+</div>
+
+<!-- ポップ演出オーバーレイ -->
+<div class="pop-overlay" id="pop-overlay">
+  <div class="pop-overlay-emoji" id="pop-emoji"></div>
+  <div class="pop-overlay-text" id="pop-text"></div>
+</div>
+
+<script>
+/* ============================================================
+   九九マスターアプリ
+   - 1ファイル完結 / 日本語 / スマホ向け
+   - Web Speech API 使用 (非対応時は代替モード)
+   - localStorage で進捗保存
+============================================================ */
+
+// ===== 定数 =====
+const STORAGE_KEY = 'kuku_progress_v1';
+const MAX_LEVEL = 5;
+const MAX_DAN = 9;
+const PASS_COUNT = 7; // レベル2〜4 クリア最低正解数
+
+// ===== 段カラーパレット =====
+const DAN_COLORS = [
+  '#f06292','#ff8a65','#ffd54f',
+  '#a5d6a7','#4dd0e1','#7986cb',
+  '#f48fb1','#ffcc80','#80cbc4'
+];
+
+// ===== 九九読み データ =====
+// [段][かける数] の全文読み / 途中読み / 答え
+// 全81問分を明示的に定義
+const KUKU_DATA = (() => {
+  // 全文読み (いんいちがいち… etc)
+  const FULL_YOMI = {
+    1: ['いんいちがいち','いんにがに','いんさんがさん','いんしがし','いんごがご',
+        'いんろくがろく','いんしちがしち','いんはちがはち','いんくがく'],
+    2: ['にいちがに','ににんがし','にさんがろく','にしがはち','にごじゅう',
+        'にろくじゅうに','にしちじゅうし','にはちじゅうろく','にくじゅうはち'],
+    3: ['さんいちがさん','さんにがろく','さざんがく','さんしじゅうに','さんごじゅうご',
+        'さんろくじゅうはち','さんしちにじゅういち','さんはにじゅうし','さんくにじゅうしち'],
+    4: ['しいちがし','しにがはち','しさんじゅうに','ししじゅうろく','しごにじゅう',
+        'しろくにじゅうし','しちしにじゅうはち','しはさんじゅうに','しくさんじゅうろく'],
+    5: ['ごいちがご','ごにじゅう','ごさんじゅうご','ごしにじゅう','ごごにじゅうご',
+        'ごろくさんじゅう','ごしちさんじゅうご','ごはしじゅう','ごくしじゅうご'],
+    6: ['ろくいちがろく','ろくにじゅうに','ろくさんじゅうはち','ろくしにじゅうし','ろくごさんじゅう',
+        'ろくろくさんじゅうろく','ろくしちしじゅうに','ろくはしじゅうはち','ろくくごじゅうし'],
+    7: ['しちいちがしち','しちにじゅうし','しちさんにじゅういち','しちしにじゅうはち','しちごさんじゅうご',
+        'しちろくしじゅうに','しちしちしじゅうく','しちはごじゅうろく','しちくろくじゅうさん'],
+    8: ['はちいちがはち','はちにじゅうろく','はちさんにじゅうし','はちしさんじゅうに','はちごしじゅう',
+        'はちろくしじゅうはち','はちしちごじゅうろく','はっぱろくじゅうし','はちくななじゅうに'],
+    9: ['くいちがく','くにじゅうはち','くさんにじゅうしち','くしさんじゅうろく','くごしじゅうご',
+        'くろくごじゅうし','くしちろくじゅうさん','くはしちじゅうに','くくはちじゅういち']
+  };
+  // 途中読み (答え直前で止める)
+  const HALF_YOMI = {
+    1: ['いんいちが','いんにが','いんさんが','いんしが','いんごが',
+        'いんろくが','いんしちが','いんはちが','いんくが'],
+    2: ['にいちが','ににんが','にさんが','にしが','にご',
+        'にろく','にしち','にはち','にく'],
+    3: ['さんいちが','さんにが','さざんが','さんし','さんご',
+        'さんろく','さんしち','さんは','さんく'],
+    4: ['しいちが','しにが','しさん','しし','しご',
+        'しろく','しちし','しは','しく'],
+    5: ['ごいちが','ごに','ごさん','ごし','ごご',
+        'ごろく','ごしち','ごは','ごく'],
+    6: ['ろくいちが','ろくに','ろくさん','ろくし','ろくご',
+        'ろくろく','ろくしち','ろくは','ろくく'],
+    7: ['しちいちが','しちに','しちさん','しちし','しちご',
+        'しちろく','しちしち','しちは','しちく'],
+    8: ['はちいちが','はちに','はちさん','はちし','はちご',
+        'はちろく','はちしち','はっぱ','はちく'],
+    9: ['くいちが','くに','くさん','くし','くご',
+        'くろく','くしち','くは','くく']
+  };
+  // 答えの正解候補マップ
+  const ANSWER_MAP = {
+    1:  ['1','１','いち'],
+    2:  ['2','２','に'],
+    3:  ['3','３','さん'],
+    4:  ['4','４','し','よん'],
+    5:  ['5','５','ご'],
+    6:  ['6','６','ろく'],
+    7:  ['7','７','しち','なな'],
+    8:  ['8','８','はち'],
+    9:  ['9','９','く','きゅう'],
+    10: ['10','１０','じゅう'],
+    12: ['12','１２','じゅうに'],
+    14: ['14','１４','じゅうし','じゅうよん'],
+    15: ['15','１５','じゅうご'],
+    16: ['16','１６','じゅうろく'],
+    18: ['18','１８','じゅうはち'],
+    20: ['20','２０','にじゅう'],
+    21: ['21','２１','にじゅういち'],
+    24: ['24','２４','にじゅうし','にじゅうよん'],
+    25: ['25','２５','にじゅうご'],
+    27: ['27','２７','にじゅうしち','にじゅうなな'],
+    28: ['28','２８','にじゅうはち'],
+    30: ['30','３０','さんじゅう'],
+    32: ['32','３２','さんじゅうに'],
+    35: ['35','３５','さんじゅうご'],
+    36: ['36','３６','さんじゅうろく'],
+    40: ['40','４０','よんじゅう'],
+    42: ['42','４２','よんじゅうに'],
+    45: ['45','４５','よんじゅうご'],
+    48: ['48','４８','よんじゅうはち'],
+    49: ['49','４９','よんじゅうきゅう','よんじゅうく'],
+    54: ['54','５４','ごじゅうし','ごじゅうよん'],
+    56: ['56','５６','ごじゅうろく'],
+    60: ['60','６０','ろくじゅう'],
+    63: ['63','６３','ろくじゅうさん'],
+    64: ['64','６４','ろくじゅうし','ろくじゅうよん'],
+    70: ['70','７０','ななじゅう','しちじゅう'],
+    72: ['72','７２','ななじゅうに','しちじゅうに'],
+    80: ['80','８０','はちじゅう'],
+    81: ['81','８１','はちじゅういち']
+  };
+  // 全問データ生成
+  const data = {};
+  for (let dan = 1; dan <= 9; dan++) {
+    data[dan] = [];
+    for (let i = 0; i < 9; i++) {
+      const mul = i + 1;
+      const ans = dan * mul;
+      data[dan].push({
+        dan, mul, ans,
+        formula: `${dan} × ${mul}`,
+        fullYomi: FULL_YOMI[dan][i],
+        halfYomi: HALF_YOMI[dan][i],
+        answerCandidates: ANSWER_MAP[ans] || [String(ans)]
+      });
+    }
+  }
+  return data;
+})();
+
+// ===== 進捗データ =====
+// { dan1: { maxClear: 0 }, dan2: {...}, ... }
+let progress = {};
+
+function defaultProgress() {
+  const p = {};
+  for (let d = 1; d <= MAX_DAN; d++) {
+    p[`dan${d}`] = { maxClear: 0 };
+  }
+  return p;
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // 構造チェック
+      if (parsed && parsed.dan1 !== undefined) {
+        progress = parsed;
+        return;
+      }
+    }
+  } catch(e) {}
+  progress = defaultProgress();
+}
+
+function saveProgress() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+  catch(e) { console.warn('localStorage save failed', e); }
+}
+
+function getDanProgress(dan) {
+  return progress[`dan${dan}`] || { maxClear: 0 };
+}
+
+// 最高クリアレベルから解放レベル計算: maxClear+1 まで挑戦可
+function getUnlockLevel(dan) {
+  const mc = getDanProgress(dan).maxClear;
+  return Math.min(mc + 1, MAX_LEVEL);
+}
+
+// 総星数
+function getTotalStars() {
+  let total = 0;
+  for (let d = 1; d <= MAX_DAN; d++) {
+    total += getDanProgress(d).maxClear; // 星数 = maxClear
+  }
+  return total;
+}
+
+// ===== トロフィー算出 =====
+function getTrophy(stars) {
+  if (stars >= 45) return { name: 'ダイヤモンドトロフィー', emoji: '💎', msg: 'ぜんぶマスター！すごい！' };
+  if (stars >= 36) return { name: 'ゴールドトロフィー',    emoji: '🏆', msg: 'あとすこしで かんぺき！' };
+  if (stars >= 27) return { name: 'シルバートロフィー',    emoji: '🥈', msg: 'かなりできてきた！' };
+  if (stars >= 18) return { name: 'ブロンズトロフィー',    emoji: '🥉', msg: 'どんどん のびてる！' };
+  if (stars >= 9)  return { name: 'がんばりトロフィー',    emoji: '🌟', msg: 'れんしゅうの せいかがでてきた！' };
+  return             { name: 'たまごトロフィー',          emoji: '🥚', msg: 'まずは 1つずつ はじめよう！' };
+}
+
+// ===== 画面切替 =====
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ===== 星表示ヘルパー =====
+function renderStars(count, max = 5) {
+  return '★'.repeat(count) + '☆'.repeat(max - count);
+}
+
+// ===== 段カードの進捗文言 =====
+function getProgressLabel(maxClear) {
+  if (maxClear === 0) return 'これから はじめよう！';
+  if (maxClear === 5) return 'かんぺき！';
+  return `レベル${maxClear} クリア！`;
+}
+
+// ===== トップ画面描画 =====
+function renderHome() {
+  loadProgress();
+  const stars = getTotalStars();
+  const trophy = getTrophy(stars);
+
+  // トロフィーエリア
+  const ta = document.getElementById('trophy-area');
+  const pct = Math.round((stars / 45) * 100);
+  ta.innerHTML = `
+    <div class="trophy-icon">${trophy.emoji}</div>
+    <div class="trophy-name">${trophy.name}</div>
+    <div class="trophy-msg">${trophy.msg}</div>
+    <div class="trophy-stars-bar">
+      <div class="trophy-star-count">⭐${stars}</div>
+      <div class="stars-progress">
+        <div class="stars-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="trophy-star-max">/ 45</div>
+    </div>
+  `;
+
+  // カードグリッド
+  const grid = document.getElementById('dan-grid');
+  grid.innerHTML = '';
+  for (let d = 1; d <= MAX_DAN; d++) {
+    const dp = getDanProgress(d);
+    const mc = dp.maxClear;
+    const color = DAN_COLORS[d - 1];
+    const card = document.createElement('div');
+    card.className = 'dan-card';
+    card.style.setProperty('--card-color', color);
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `${d}のだん、星${mc}個`);
+    card.innerHTML = `
+      <div class="dan-card-number">${d}</div>
+      <div class="dan-card-label">のだん</div>
+      <div class="dan-card-stars">${renderStars(mc)}</div>
+      <div class="dan-card-progress">${getProgressLabel(mc)}</div>
+    `;
+    card.addEventListener('click', () => openStudy(d));
+    grid.appendChild(card);
+  }
+}
+
+// ===== リセット処理 =====
+function resetProgress() {
+  if (!confirm('きろくをぜんぶ リセットしますか？\nほしも ゼロになります。')) return;
+  progress = defaultProgress();
+  saveProgress();
+  renderHome();
+  showPopup('🗑️', 'リセットしました！');
+}
+
+// ===== ポップアップ演出 =====
+function showPopup(emoji, text, duration = 1800) {
+  const overlay = document.getElementById('pop-overlay');
+  document.getElementById('pop-emoji').textContent = emoji;
+  document.getElementById('pop-text').textContent = text;
+  overlay.classList.add('show');
+  setTimeout(() => overlay.classList.remove('show'), duration);
+}
+
+/* ============================================================
+   音声関連
+============================================================ */
+// ===== 音声合成 =====
+let ttsSupported = (typeof speechSynthesis !== 'undefined');
+
+function speak(text, onEnd, onError) {
+  if (!ttsSupported) { if(onEnd) onEnd(); return; }
+  try {
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'ja-JP';
+    utter.rate = 0.82;
+    utter.pitch = 1.1;
+    utter.volume = 1.0;
+    // 日本語音声を探す
+    const voices = speechSynthesis.getVoices();
+    const jaVoice = voices.find(v => v.lang.startsWith('ja'));
+    if (jaVoice) utter.voice = jaVoice;
+    utter.onend = () => { if(onEnd) onEnd(); };
+    utter.onerror = (e) => { console.warn('TTS error', e); if(onError) onError(e); else if(onEnd) onEnd(); };
+    speechSynthesis.speak(utter);
+  } catch(e) {
+    console.warn('speak error', e);
+    if(onError) onError(e); else if(onEnd) onEnd();
+  }
+}
+
+// iOS Safari での沈黙バグ対策
+function ensureVoicesLoaded(cb) {
+  const voices = speechSynthesis.getVoices();
+  if (voices.length > 0) { cb(); return; }
+  speechSynthesis.addEventListener('voiceschanged', cb, { once: true });
+  setTimeout(cb, 800); // fallback
+}
+
+// ===== 音声認識 =====
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let speechSupported = !!SpeechRec;
+let activeRecognition = null;
+
+function stopRecognition() {
+  if (activeRecognition) {
+    try { activeRecognition.stop(); } catch(e) {}
+    activeRecognition = null;
+  }
+}
+
+function startRecognition(onResult, onError, onNoMatch) {
+  if (!speechSupported) { if(onNoMatch) onNoMatch('unsupported'); return; }
+  stopRecognition();
+  try {
+    const rec = new SpeechRec();
+    rec.lang = 'ja-JP';
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.maxAlternatives = 5;
+    activeRecognition = rec;
+    rec.onresult = (e) => {
+      const results = [];
+      for (let i = 0; i < e.results[0].length; i++) {
+        results.push(e.results[0][i].transcript.trim());
+      }
+      activeRecognition = null;
+      onResult(results);
+    };
+    rec.onerror = (e) => {
+      activeRecognition = null;
+      console.warn('SpeechRec error:', e.error);
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        speechSupported = false;
+        onError('permission');
+      } else if (e.error === 'no-speech' || e.error === 'aborted') {
+        if(onNoMatch) onNoMatch('no-speech');
+      } else {
+        if(onError) onError(e.error);
+      }
+    };
+    rec.onnomatch = () => { activeRecognition = null; if(onNoMatch) onNoMatch('no-match'); };
+    rec.start();
+  } catch(e) {
+    activeRecognition = null;
+    console.warn('SpeechRec start error', e);
+    if(onError) onError('start-error');
+  }
+}
+
+/* ============================================================
+   答え判定
+============================================================ */
+function normalizeText(s) {
+  return s.replace(/[\s　。、！？!?,.]/g, '').toLowerCase()
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
+function judgeAnswer(recognizedList, answerCandidates) {
+  for (const raw of recognizedList) {
+    const norm = normalizeText(raw);
+    for (const cand of answerCandidates) {
+      if (norm === normalizeText(cand)) return true;
+      // 部分一致も許容（認識にノイズが混じる場合）
+      if (norm.includes(normalizeText(cand)) || normalizeText(cand).includes(norm)) return true;
+    }
+  }
+  return false;
+}
+
+/* ============================================================
+   学習画面 ゲーム状態
+============================================================ */
+let gameState = {
+  dan: 1,
+  level: 1,
+  questions: [],    // 問題配列
+  qIndex: 0,
+  correctCount: 0,
+  state: 'idle',    // idle / speaking / waitingAnswer / recognizing / judged / levelClear / levelFail
+  lastJudge: null,  // true/false
+  altMode: false    // 代替モード
+};
+
+// ===== 学習画面を開く =====
+function openStudy(dan) {
+  stopRecognition();
+  if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e) {} }
+  gameState.dan = dan;
+  gameState.state = 'idle';
+  showScreen('study');
+  renderStudyLevelSelect();
+}
+
+// ===== レベル選択画面描画 =====
+function renderStudyLevelSelect() {
+  const dan = gameState.dan;
+  const dp = getDanProgress(dan);
+  const mc = dp.maxClear;
+  const unlockLevel = getUnlockLevel(dan);
+  const color = DAN_COLORS[dan - 1];
+
+  const levelDescs = [
+    'こえをきいて、まねしていおう',
+    'こたえだけ いってみよう',
+    'ぎゃくじゅんで こたえよう',
+    'ランダムしゅつだいに ちょうせん！',
+    'まちがえたら さいしょから！'
+  ];
+  const levelIcons = ['👂','💬','🔄','🎲','👑'];
+
+  let levelsHTML = '';
+  for (let lv = 1; lv <= MAX_LEVEL; lv++) {
+    const isCleared = mc >= lv;
+    const isAvailable = lv <= unlockLevel;
+    const isLocked = !isAvailable;
+    let cls = isCleared ? 'cleared' : (isAvailable ? 'available' : 'locked');
+    let statusText = isLocked ? '🔒 ロック中' : (isCleared ? '✅ クリア済' : '▶ ちょうせん！');
+    levelsHTML += `
+      <div class="level-item ${cls}" onclick="startLevel(${lv})" aria-label="レベル${lv}${isLocked?'ロック中':''}">
+        <div class="level-badge">${isLocked ? '🔒' : levelIcons[lv-1]}</div>
+        <div class="level-info">
+          <div class="level-name">レベル ${lv}</div>
+          <div class="level-desc">${levelDescs[lv-1]}</div>
+        </div>
+        <div class="level-status">${statusText}</div>
+      </div>`;
+  }
+
+  document.getElementById('study-content').innerHTML = `
+    <div class="study-header">
+      <button class="btn-back" onclick="goHome()" aria-label="もどる">←</button>
+      <div class="study-title-area">
+        <div class="study-dan-title" style="color:${color}">${dan}のだん</div>
+        <div class="study-stars-display">${renderStars(mc)} (${mc}★)</div>
+      </div>
+    </div>
+    <div class="level-select-area">
+      <div class="level-select-title">レベルをえらんでね</div>
+      <div class="level-list">${levelsHTML}</div>
+    </div>
+  `;
+}
+
+// ===== ホームに戻る =====
+function goHome() {
+  stopRecognition();
+  if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e) {} }
+  renderHome();
+  showScreen('home');
+}
+
+// ===== レベル開始 =====
+function startLevel(level) {
+  const dan = gameState.dan;
+  const unlockLevel = getUnlockLevel(dan);
+  if (level > unlockLevel) {
+    showPopup('🔒', `まず レベル${level-1}を クリアしよう！`);
+    return;
+  }
+
+  gameState.level = level;
+  gameState.qIndex = 0;
+  gameState.correctCount = 0;
+  gameState.state = 'idle';
+  gameState.lastJudge = null;
+  gameState.altMode = !speechSupported;
+
+  // 問題配列生成
+  const base = KUKU_DATA[dan].slice(); // 9問コピー
+  if (level === 3) {
+    // 逆順
+    gameState.questions = base.slice().reverse();
+  } else if (level === 4 || level === 5) {
+    // ランダム
+    gameState.questions = shuffleArray(base);
+  } else {
+    // 順番
+    gameState.questions = base;
+  }
+
+  renderGameScreen();
+}
+
+// ===== 配列シャッフル =====
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ============================================================
+   ゲーム画面描画
+============================================================ */
+function renderGameScreen() {
+  const { dan, level, qIndex, questions, correctCount, altMode } = gameState;
+  const total = questions.length;
+  const color = DAN_COLORS[dan - 1];
+  const q = questions[qIndex];
+  const pct = Math.round((qIndex / total) * 100);
+  const isLv1 = level === 1;
+
+  // 答えを隠すか
+  const showAns = (level === 1);
+  const formulaHtml = showAns
+    ? `${q.formula} = <span style="color:${color}">${q.ans}</span>`
+    : `${q.formula} = <span style="color:#ccc">?</span>`;
+
+  // 代替モード選択肢生成
+  let altChoicesHTML = '';
+  if (altMode && level > 1) {
+    const choices = generateChoices(q.ans, dan, level);
+    altChoicesHTML = `<div class="alt-choices" id="alt-choices">
+      ${choices.map(c => `<button class="btn-choice" onclick="handleAltChoice(${c})" aria-label="${c}">${c}</button>`).join('')}
+    </div>`;
+  } else if (altMode && level === 1) {
+    altChoicesHTML = `<div class="btn-group"><button class="btn-primary" onclick="handleAltLv1()" aria-label="きこえた">👂 きこえた！</button></div>`;
+  }
+
+  const noBanner = altMode ? `<div class="no-speech-banner">このブラウザでは音声認識が使えません。<br>ボタンで こたえをえらんでね！</div>` : '';
+
+  document.getElementById('study-content').innerHTML = `
+    <div class="study-header">
+      <button class="btn-back" onclick="confirmBackFromGame()" aria-label="もどる">←</button>
+      <div class="study-title-area">
+        <div class="study-dan-title" style="color:${color}">${dan}のだん レベル${level}</div>
+        <div class="study-stars-display">${renderStars(getDanProgress(dan).maxClear)}</div>
+      </div>
+    </div>
+    <div class="game-area">
+      ${noBanner}
+      <div class="progress-info">
+        <span>もんだい ${qIndex + 1} / ${total}</span>
+        <span>せいかい ${correctCount}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%" id="prog-fill"></div></div>
+      <div class="question-card">
+        <div class="question-formula" id="q-formula">${formulaHtml}</div>
+        <div class="question-reading" id="q-reading"></div>
+      </div>
+      <div class="status-msg" id="status-msg">▶ スタートをおしてね</div>
+      <div class="recognition-result" id="rec-result">　</div>
+      <div class="judge-icon" id="judge-icon"></div>
+      ${altMode ? altChoicesHTML : ''}
+      <div class="btn-group" id="btn-area">
+        <button class="btn-primary" id="btn-start" onclick="handleStart()" aria-label="スタート">▶ スタート</button>
+      </div>
+    </div>
+  `;
+}
+
+// ===== 代替モード用選択肢生成 =====
+function generateChoices(correctAns, dan, level) {
+  const allAnswers = new Set();
+  for (let d = 1; d <= MAX_DAN; d++) {
+    KUKU_DATA[d].forEach(q => allAnswers.add(q.ans));
+  }
+  const others = [...allAnswers].filter(a => a !== correctAns);
+  // ランダムに3つ選ぶ
+  const chosen = [];
+  const pool = shuffleArray(others);
+  for (let i = 0; i < 3 && i < pool.length; i++) chosen.push(pool[i]);
+  // 4択 (正解含む)
+  const choices = shuffleArray([correctAns, ...chosen.slice(0, 3)]);
+  return choices;
+}
+
+/* ============================================================
+   ゲーム進行制御
+============================================================ */
+
+// ===== スタートボタン処理 =====
+function handleStart() {
+  const { level, qIndex, questions, altMode } = gameState;
+  const q = questions[qIndex];
+  gameState.state = 'speaking';
+  setStatus('きいてね 🎵');
+  setBtnArea('');
+  setRecResult('', '');
+  setJudgeIcon('');
+
+  if (altMode) {
+    // 代替モード: 音声再生のみ (認識なし)
+    if (ttsSupported) {
+      const yomi = (level === 1) ? q.fullYomi : q.halfYomi;
+      setReadingDisplay(yomi);
+      speak(yomi, () => {
+        gameState.state = 'waitingAnswer';
+        afterSpeak();
+      }, () => {
+        gameState.state = 'waitingAnswer';
+        afterSpeak();
+      });
+    } else {
+      setReadingDisplay((level === 1) ? q.fullYomi : q.halfYomi);
+      gameState.state = 'waitingAnswer';
+      afterSpeak();
+    }
+    return;
+  }
+
+  // 音声あり
+  ensureVoicesLoaded(() => {
+    const yomi = (level === 1) ? q.fullYomi : q.halfYomi;
+    setReadingDisplay(yomi);
+    speak(yomi, () => {
+      gameState.state = 'waitingAnswer';
+      afterSpeak();
+    }, (err) => {
+      setStatus('⚠ おとがでなかったよ。もういちど！');
+      setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🔄 もういちど</button>`);
+    });
+  });
+}
+
+function afterSpeak() {
+  const { level, altMode } = gameState;
+  if (level === 1) {
+    setStatus('おなじように いってみよう！ 🗣');
+  } else {
+    setStatus('こたえを いってね！ 🗣');
+  }
+
+  if (altMode) {
+    // 代替モードは buttons でハンドル済み
+    return;
+  }
+  // 音声認識開始
+  gameState.state = 'recognizing';
+  setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
+  startRecognition(
+    (results) => handleRecognitionResult(results),
+    (errType) => handleRecognitionError(errType),
+    (type) => handleRecognitionNoMatch(type)
+  );
+}
+
+// ===== 音声認識結果処理 =====
+function handleRecognitionResult(results) {
+  gameState.state = 'judged';
+  const { level, questions, qIndex } = gameState;
+  const q = questions[qIndex];
+
+  if (level === 1) {
+    // レベル1: 何か言えばOK
+    const said = results.join('').trim();
+    if (said.length > 0) {
+      setRecResult(`「${said}」`, 'correct');
+      onCorrect();
+    } else {
+      onNoSpeech();
+    }
+  } else {
+    const correct = judgeAnswer(results, q.answerCandidates);
+    const said = results[0] || '';
+    if (correct) {
+      setRecResult(`「${said}」 ✓`, 'correct');
+      onCorrect();
+    } else {
+      setRecResult(`「${said}」 ✗`, 'wrong');
+      onWrong();
+    }
+  }
+}
+
+function handleRecognitionError(errType) {
+  gameState.state = 'idle';
+  if (errType === 'permission') {
+    speechSupported = false;
+    gameState.altMode = true;
+    setStatus('⚠ マイクを使えません。ボタンモードにきりかえます。');
+    setTimeout(() => { startLevel(gameState.level); }, 1500);
+  } else {
+    setStatus('⚠ エラーがおきました。もういちど！');
+    setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🔄 もういちど</button>`);
+  }
+}
+
+function handleRecognitionNoMatch(type) {
+  gameState.state = 'idle';
+  setStatus('きこえなかったよ… もういちど いってね 🎤');
+  setRecResult('', '');
+  setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🎤 もういちど</button>`);
+}
+
+function onNoSpeech() {
+  gameState.state = 'idle';
+  setStatus('きこえなかったよ… もういちど！');
+  setRecResult('', '');
+  setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🎤 もういちど いってみよう</button>`);
+}
+
+// ===== 代替モード処理 =====
+function handleAltLv1() {
+  gameState.state = 'judged';
+  setRecResult('👂 きいたよ！', 'correct');
+  onCorrect();
+}
+
+function handleAltChoice(chosen) {
+  if (gameState.state === 'judged') return;
+  const { questions, qIndex } = gameState;
+  const q = questions[qIndex];
+  gameState.state = 'judged';
+  const correct = (chosen === q.ans);
+  // ボタン色変更
+  const btns = document.querySelectorAll('.btn-choice');
+  btns.forEach(b => {
+    const val = parseInt(b.textContent);
+    if (val === q.ans) b.classList.add('correct-choice');
+    else if (val === chosen && !correct) b.classList.add('wrong-choice');
+    b.onclick = null;
+  });
+  if (correct) {
+    setRecResult(`${chosen} ✓ せいかい！`, 'correct');
+    onCorrect();
+  } else {
+    setRecResult(`${chosen} ✗ こたえは ${q.ans}`, 'wrong');
+    onWrong();
+  }
+}
+
+/* ============================================================
+   正誤処理
+============================================================ */
+function onCorrect() {
+  gameState.correctCount++;
+  setJudgeIcon('⭕');
+  setStatus('せいかい！ すごい！ 🎉');
+  speak('せいかい', null, null);
+  setBtnArea(`<button class="btn-secondary" onclick="goNextQuestion()" aria-label="つぎへ">▶ つぎへ</button>`);
+  showPopup('⭕', 'せいかい！', 800);
+}
+
+function onWrong() {
+  const { level, questions, qIndex } = gameState;
+  const q = questions[qIndex];
+  const correctYomi = q.fullYomi;
+
+  if (level === 5) {
+    // レベル5: 即失敗
+    gameState.state = 'levelFail';
+    setJudgeIcon('❌');
+    setStatus(`しっぱい！ もういちど チャレンジ！`);
+    speak('ざんねん', null, null);
+    setTimeout(() => renderLevelFail(), 1200);
+    return;
+  }
+
+  setJudgeIcon('❌');
+  setStatus(`ざんねん… こたえは「${q.ans}」だよ`);
+  speak(`こたえは${correctYomi}`, null, null);
+  setBtnArea(`<button class="btn-secondary" onclick="goNextQuestion()" aria-label="つぎへ">▶ つぎへ</button>`);
+}
+
+// ===== 次の問題へ =====
+function goNextQuestion() {
+  gameState.qIndex++;
+  const { qIndex, questions, level, correctCount } = gameState;
+  if (qIndex >= questions.length) {
+    // 全問終了
+    judgeLevel();
+    return;
+  }
+  gameState.state = 'idle';
+  // 画面更新
+  renderNextQuestion();
+}
+
+function renderNextQuestion() {
+  const { dan, level, qIndex, questions, correctCount, altMode } = gameState;
+  const total = questions.length;
+  const q = questions[qIndex];
+  const color = DAN_COLORS[dan - 1];
+  const pct = Math.round((qIndex / total) * 100);
+  const showAns = (level === 1);
+  const formulaHtml = showAns
+    ? `${q.formula} = <span style="color:${color}">${q.ans}</span>`
+    : `${q.formula} = <span style="color:#ccc">?</span>`;
+
+  // 進捗バー更新
+  const fill = document.getElementById('prog-fill');
+  if (fill) fill.style.width = pct + '%';
+
+  // 問題情報更新
+  const qf = document.getElementById('q-formula');
+  if (qf) qf.innerHTML = formulaHtml;
+
+  const qr = document.getElementById('q-reading');
+  if (qr) qr.textContent = '';
+
+  // カウント更新
+  const pi = document.querySelector('.progress-info');
+  if (pi) pi.innerHTML = `<span>もんだい ${qIndex + 1} / ${total}</span><span>せいかい ${correctCount}</span>`;
+
+  setStatus('▶ スタートをおしてね');
+  setRecResult('', '');
+  setJudgeIcon('');
+
+  // 代替モードのボタン再生成
+  if (altMode && level > 1) {
+    const choices = generateChoices(q.ans, dan, level);
+    const altArea = document.getElementById('alt-choices');
+    if (altArea) {
+      altArea.innerHTML = choices.map(c =>
+        `<button class="btn-choice" onclick="handleAltChoice(${c})" aria-label="${c}">${c}</button>`
+      ).join('');
+    }
+  }
+
+  setBtnArea(`<button class="btn-primary" id="btn-start" onclick="handleStart()" aria-label="スタート">▶ スタート</button>`);
+}
+
+/* ============================================================
+   レベル終了判定
+============================================================ */
+function judgeLevel() {
+  const { dan, level, correctCount, questions } = gameState;
+  const total = questions.length;
+
+  if (level === 1) {
+    // レベル1: 全問完了でクリア
+    renderLevelClear();
+  } else if (level <= 4) {
+    // レベル2〜4: 7問以上正解
+    if (correctCount >= PASS_COUNT) {
+      renderLevelClear();
+    } else {
+      renderLevelFail();
+    }
+  } else {
+    // レベル5: ここに来たらノーミスクリア
+    renderLevelClear();
+  }
+}
+
+// ===== レベルクリア処理 =====
+function renderLevelClear() {
+  const { dan, level, correctCount, questions } = gameState;
+  const total = questions.length;
+  gameState.state = 'levelClear';
+
+  // 進捗更新
+  const dp = getDanProgress(dan);
+  const prevMaxClear = dp.maxClear;
+  if (level > prevMaxClear) {
+    dp.maxClear = level;
+    progress[`dan${dan}`] = dp;
+    saveProgress();
+  }
+
+  const newStars = getDanProgress(dan).maxClear;
+  const starGained = newStars > prevMaxClear;
+
+  let msg = '';
+  if (level === 1) {
+    msg = `レベル2が あたらしく あそべるよ！`;
+  } else if (level < MAX_LEVEL) {
+    msg = `レベル${level + 1}が あたらしく あそべるよ！`;
+  } else {
+    msg = `この段を かんぜんマスター！ かんぺき！`;
+  }
+
+  const emoji = level === 5 ? '🏆' : '🌟';
+
+  stopRecognition();
+  if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e) {} }
+  speak('やったー クリア', null, null);
+
+  const content = document.getElementById('study-content');
+  const color = DAN_COLORS[dan - 1];
+  content.innerHTML = `
+    <div class="study-header">
+      <button class="btn-back" onclick="openStudy(${dan})" aria-label="もどる">←</button>
+      <div class="study-title-area">
+        <div class="study-dan-title" style="color:${color}">${dan}のだん レベル${level}</div>
+      </div>
+    </div>
+    <div class="result-area">
+      <div class="result-emoji">${emoji}</div>
+      <div class="result-title success">クリア！</div>
+      ${level > 1 ? `<div class="result-score">せいかい ${correctCount} / ${total}</div>` : ''}
+      <div class="result-stars">${renderStars(newStars)}</div>
+      ${starGained ? `<div style="font-size:.9rem;color:#f06292;font-weight:700">⭐ ほしが ${newStars}つになったよ！</div>` : ''}
+      <div class="result-msg">${msg}</div>
+      <div class="btn-group">
+        ${level < MAX_LEVEL ? `<button class="btn-primary" onclick="startLevel(${level + 1})" aria-label="レベル${level+1}へ">▶ レベル${level + 1}へ</button>` : ''}
+        <button class="btn-secondary" onclick="openStudy(${dan})" aria-label="レベルせんたくへ">📋 レベルせんたくへ</button>
+        <button class="btn-tertiary" onclick="goHome()" aria-label="トップへもどる">🏠 トップへもどる</button>
+      </div>
+    </div>
+  `;
+
+  if (starGained) showPopup('⭐', `ほし ${newStars}つ！`, 2000);
+}
+
+// ===== レベル失敗処理 =====
+function renderLevelFail() {
+  const { dan, level, correctCount, questions } = gameState;
+  const total = questions.length;
+  gameState.state = 'levelFail';
+
+  stopRecognition();
+  if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e) {} }
+
+  const color = DAN_COLORS[dan - 1];
+  const isLv5 = (level === 5);
+  const titleText = isLv5 ? 'しっぱい！ もういちど チャレンジ！' : 'もういちど やってみよう！';
+  const emoji = isLv5 ? '😅' : '💪';
+  const minMsg = isLv5 ? 'ノーミスで クリアしよう！' : `${PASS_COUNT}もん いじょう せいかいで クリア！`;
+
+  const content = document.getElementById('study-content');
+  content.innerHTML = `
+    <div class="study-header">
+      <button class="btn-back" onclick="openStudy(${dan})" aria-label="もどる">←</button>
+      <div class="study-title-area">
+        <div class="study-dan-title" style="color:${color}">${dan}のだん レベル${level}</div>
+      </div>
+    </div>
+    <div class="result-area">
+      <div class="result-emoji">${emoji}</div>
+      <div class="result-title fail">${titleText}</div>
+      ${level > 1 ? `<div class="result-score">せいかい ${correctCount} / ${total}</div>` : ''}
+      <div class="result-msg">${minMsg}</div>
+      <div class="btn-group">
+        <button class="btn-primary" onclick="startLevel(${level})" aria-label="もういちど">🔄 もういちど</button>
+        <button class="btn-secondary" onclick="openStudy(${dan})" aria-label="レベルせんたくへ">📋 レベルせんたくへ</button>
+        <button class="btn-tertiary" onclick="goHome()" aria-label="トップへもどる">🏠 トップへもどる</button>
+      </div>
+    </div>
+  `;
+}
+
+// ===== ゲーム中に戻るボタン押した時 =====
+function confirmBackFromGame() {
+  stopRecognition();
+  if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e) {} }
+  openStudy(gameState.dan);
+}
+
+/* ============================================================
+   UI ヘルパー
+============================================================ */
+function setStatus(html) {
+  const el = document.getElementById('status-msg');
+  if (el) el.innerHTML = html;
+}
+function setRecResult(text, cls) {
+  const el = document.getElementById('rec-result');
+  if (!el) return;
+  el.textContent = text || '　';
+  el.className = 'recognition-result' + (cls ? ` ${cls}` : '');
+}
+function setJudgeIcon(text) {
+  const el = document.getElementById('judge-icon');
+  if (el) el.textContent = text;
+}
+function setBtnArea(html) {
+  const el = document.getElementById('btn-area');
+  if (el) el.innerHTML = html;
+}
+function setReadingDisplay(text) {
+  const el = document.getElementById('q-reading');
+  if (el) el.textContent = text;
+}
+
+/* ============================================================
+   初期化
+============================================================ */
+function init() {
+  loadProgress();
+  renderHome();
+  // voiceschanged をトリガーしておく (iOS対策)
+  if (ttsSupported) {
+    try { speechSynthesis.getVoices(); } catch(e) {}
+  }
+}
+
+// DOMContentLoaded後に初期化
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
