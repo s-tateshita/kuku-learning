@@ -1250,31 +1250,32 @@ function handleStart() {
 function afterSpeak() {
   const { level, altMode } = gameState;
 
-  // レベル1: ディクテーションなし、TTS発声確認のみ → 自動正解
   if (level === 1) {
-    gameState.state = 'judged';
-    setStatus('');
-    onCorrect();
-    return;
+    setStatus('おなじように いってみよう！ 🗣');
+  } else {
+    setStatus('こたえを いってね！ 🗣');
   }
-
-  setStatus('こたえを いってね！ 🗣');
 
   if (altMode) {
     // 代替モードは buttons でハンドル済み
     return;
   }
-  // 音声認識開始（TTS残響対策で少し待つ）
+
+  // 音声認識開始（遅延なし）
   gameState.state = 'recognizing';
   setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
+  startRecognition(
+    (results) => handleRecognitionResult(results),
+    (errType) => handleRecognitionError(errType),
+    (type) => handleRecognitionNoMatch(type)
+  );
+
+  // 2秒待って認識されなければ no-speech 扱い
   setTimeout(() => {
     if (gameState.state !== 'recognizing') return;
-    startRecognition(
-      (results) => handleRecognitionResult(results),
-      (errType) => handleRecognitionError(errType),
-      (type) => handleRecognitionNoMatch(type)
-    );
-  }, 1500);
+    stopRecognition();
+    handleRecognitionNoMatch('no-speech');
+  }, 2000);
 }
 
 // ===== 音声認識結果処理 =====
@@ -1284,10 +1285,9 @@ function handleRecognitionResult(results) {
   const q = questions[qIndex];
 
   if (level === 1) {
-    // レベル1: 何か言えばOK
+    // レベル1: 何か発声されればOK（表示なし）
     const said = results.join('').trim();
     if (said.length > 0) {
-      setRecResult(`「${said}」`, 'correct');
       onCorrect();
     } else {
       onNoSpeech();
