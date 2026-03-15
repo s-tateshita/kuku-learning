@@ -867,14 +867,14 @@ function showPopup(emoji, text, duration = 1800) {
 // ===== 音声合成 =====
 let ttsSupported = (typeof speechSynthesis !== 'undefined');
 
-function speak(text, onEnd, onError) {
+function speak(text, onEnd, onError, pitch = 1.1) {
   if (!ttsSupported) { if(onEnd) onEnd(); return; }
   try {
     speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'ja-JP';
     utter.rate = 0.82;
-    utter.pitch = 1.1;
+    utter.pitch = pitch;
     utter.volume = 1.0;
     // 日本語音声を探す
     const voices = speechSynthesis.getVoices();
@@ -1251,7 +1251,7 @@ function afterSpeak() {
       (errType) => handleRecognitionError(errType),
       (type) => handleRecognitionNoMatch(type)
     );
-  }, 400);
+  }, 800);
 }
 
 // ===== 音声認識結果処理 =====
@@ -1346,7 +1346,7 @@ function onCorrect() {
   gameState.correctCount++;
   setJudgeIcon('⭕');
   setStatus('せいかい！ すごい！ 🎉');
-  speak('せいかい', null, null);
+  speak('せいかい', null, null, 1.0);
   setBtnArea(`<button class="btn-secondary" onclick="goNextQuestion()" aria-label="つぎへ">▶ つぎへ</button>`);
   showPopup('⭕', 'せいかい！', 800);
 }
