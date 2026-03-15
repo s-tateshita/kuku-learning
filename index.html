@@ -1324,16 +1324,16 @@ function handleRecognitionError(errType) {
 
 function handleRecognitionNoMatch(type) {
   gameState.state = 'idle';
-  setStatus('きこえなかったよ… もういちど 🎤');
+  setStatus('きこえなかったよ 😔');
   setRecResult('', '');
-  setTimeout(() => handleStart(), 800);
+  setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🔄 もういちど</button>`);
 }
 
 function onNoSpeech() {
   gameState.state = 'idle';
-  setStatus('きこえなかったよ… もういちど！');
+  setStatus('きこえなかったよ 😔');
   setRecResult('', '');
-  setTimeout(() => handleStart(), 800);
+  setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🔄 もういちど</button>`);
 }
 
 // ===== 代替モード処理 =====
