@@ -1011,7 +1011,8 @@ let gameState = {
   correctCount: 0,
   state: 'idle',    // idle / speaking / waitingAnswer / recognizing / judged / levelClear / levelFail
   lastJudge: null,  // true/false
-  altMode: false    // 代替モード
+  altMode: false,   // 代替モード
+  gid: 0            // ゲーム世代ID: 画面を離れる度にインクリメント
 };
 
 // ===== 学習画面を開く =====
@@ -1113,7 +1114,7 @@ function startLevel(level) {
 
   renderGameScreen();
   // スタートボタンなし: 画面描画後すぐに自動スタート
-  setTimeout(() => handleStart(), 200);
+  { const gid = gameState.gid; setTimeout(() => { if (gameState.gid !== gid) return; handleStart(); }, 200); }
 }
 
 // ===== 配列シャッフル =====
@@ -1264,8 +1265,9 @@ function afterSpeak() {
 
   // TTS残響対策: 0.5秒後に認識開始
   gameState.state = 'recognizing';
+  const gid = gameState.gid;
   setTimeout(() => {
-    if (gameState.state !== 'recognizing') return;
+    if (gameState.gid !== gid || gameState.state !== 'recognizing') return;
     if (level !== 1) {
       setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
     }
@@ -1276,7 +1278,7 @@ function afterSpeak() {
     );
     // 5秒待って認識されなければ no-speech 扱い
     setTimeout(() => {
-      if (gameState.state !== 'recognizing') return;
+      if (gameState.gid !== gid || gameState.state !== 'recognizing') return;
       stopRecognition();
       handleRecognitionNoMatch('no-speech');
     }, 5000);
@@ -1374,10 +1376,11 @@ function onCorrect() {
   setJudgeIcon('⭕');
   setStatus('せいかい！ すごい！ 🎉');
   showPopup('⭕', 'せいかい！', 800);
+  const gid = gameState.gid;
   speak('せいかい', () => {
-    setTimeout(() => goNextQuestion(), 1300);
+    setTimeout(() => { if (gameState.gid !== gid) return; goNextQuestion(); }, 1300);
   }, () => {
-    setTimeout(() => goNextQuestion(), 1300);
+    setTimeout(() => { if (gameState.gid !== gid) return; goNextQuestion(); }, 1300);
   }, 0.5);
 }
 
@@ -1398,10 +1401,11 @@ function onWrong() {
 
   setJudgeIcon('❌');
   setStatus(`ざんねん… こたえは「${q.ans}」だよ`);
+  const gid = gameState.gid;
   speak(`こたえは${correctYomi}`, () => {
-    setTimeout(() => goNextQuestion(), 2300);
+    setTimeout(() => { if (gameState.gid !== gid) return; goNextQuestion(); }, 2300);
   }, () => {
-    setTimeout(() => goNextQuestion(), 2300);
+    setTimeout(() => { if (gameState.gid !== gid) return; goNextQuestion(); }, 2300);
   });
 }
 
@@ -1462,7 +1466,8 @@ function renderNextQuestion() {
 
   setBtnArea('');
   // 次の問題も自動スタート
-  setTimeout(() => handleStart(), 300);
+  const gid = gameState.gid;
+  setTimeout(() => { if (gameState.gid !== gid) return; handleStart(); }, 300);
 }
 
 /* ============================================================
@@ -1587,6 +1592,7 @@ function renderLevelFail() {
 
 // ===== ゲーム中に戻るボタン押した時 =====
 function confirmBackFromGame() {
+  gameState.gid++;          // 全ての遅延コールバックを無効化
   stopRecognition();
   if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e) {} }
   openStudy(gameState.dan);
