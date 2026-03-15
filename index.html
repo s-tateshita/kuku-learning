@@ -1296,12 +1296,11 @@ function handleRecognitionResult(results) {
     }
   } else {
     const correct = judgeAnswer(results, q.answerCandidates, q.ans);
-    const said = results[0] || '';
     if (correct) {
-      setRecResult(`「${said}」 ✓`, 'correct');
+      setRecResult(`${q.ans} ✓`, 'correct');
       onCorrect();
     } else {
-      setRecResult(`「${said}」 ✗`, 'wrong');
+      setRecResult(`${q.ans} ✗`, 'wrong');
       onWrong();
     }
   }
@@ -1373,9 +1372,9 @@ function onCorrect() {
   setStatus('せいかい！ すごい！ 🎉');
   showPopup('⭕', 'せいかい！', 800);
   speak('せいかい', () => {
-    setTimeout(() => goNextQuestion(), 300);
+    setTimeout(() => goNextQuestion(), 2300);
   }, () => {
-    setTimeout(() => goNextQuestion(), 300);
+    setTimeout(() => goNextQuestion(), 2300);
   }, 0.5);
 }
 
@@ -1397,9 +1396,9 @@ function onWrong() {
   setJudgeIcon('❌');
   setStatus(`ざんねん… こたえは「${q.ans}」だよ`);
   speak(`こたえは${correctYomi}`, () => {
-    setTimeout(() => goNextQuestion(), 300);
+    setTimeout(() => goNextQuestion(), 2300);
   }, () => {
-    setTimeout(() => goNextQuestion(), 300);
+    setTimeout(() => goNextQuestion(), 2300);
   });
 }
 
