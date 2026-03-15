@@ -1271,12 +1271,12 @@ function afterSpeak() {
       (errType) => handleRecognitionError(errType),
       (type) => handleRecognitionNoMatch(type)
     );
-    // 2秒待って認識されなければ no-speech 扱い
+    // 5秒待って認識されなければ no-speech 扱い
     setTimeout(() => {
       if (gameState.state !== 'recognizing') return;
       stopRecognition();
       handleRecognitionNoMatch('no-speech');
-    }, 2000);
+    }, 5000);
   }, 500);
 }
 
