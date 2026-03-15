@@ -754,10 +754,9 @@ function getDanProgress(dan) {
   return progress[`dan${dan}`] || { maxClear: 0 };
 }
 
-// 最高クリアレベルから解放レベル計算: maxClear+1 まで挑戦可
+// 最高クリアレベルから解放レベル計算（テスト用: 全レベル解放）
 function getUnlockLevel(dan) {
-  const mc = getDanProgress(dan).maxClear;
-  return Math.min(mc + 1, MAX_LEVEL);
+  return MAX_LEVEL;
 }
 
 // 総星数
@@ -893,8 +892,10 @@ function speak(text, onEnd, onError, pitch = 1.1) {
 function ensureVoicesLoaded(cb) {
   const voices = speechSynthesis.getVoices();
   if (voices.length > 0) { cb(); return; }
-  speechSynthesis.addEventListener('voiceschanged', cb, { once: true });
-  setTimeout(cb, 800); // fallback
+  let called = false;
+  const once = () => { if (called) return; called = true; cb(); };
+  speechSynthesis.addEventListener('voiceschanged', once, { once: true });
+  setTimeout(once, 800); // fallback
 }
 
 // ===== 音声認識 =====
@@ -962,20 +963,37 @@ function startRecognition(onResult, onError, onNoMatch) {
    答え判定
 ============================================================ */
 function normalizeText(s) {
-  const kanjiMap = {'一':'いち','二':'に','三':'さん','四':'し','五':'ご',
-    '六':'ろく','七':'しち','八':'はち','九':'く','十':'じゅう','百':'ひゃく'};
   return s.replace(/[\s　。、！？!?,.]/g, '').toLowerCase()
-    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-    .replace(/[一二三四五六七八九十百]/g, c => kanjiMap[c] || c);
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 }
 
-function judgeAnswer(recognizedList, answerCandidates) {
+// 漢字数字文字列を整数に変換（例: "六十三" → 63）
+function kanjiToNum(s) {
+  const d = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};
+  let result = 0, cur = 0;
+  for (const c of s) {
+    if (d[c] !== undefined) { cur = d[c]; }
+    else if (c === '十') { result += (cur || 1) * 10; cur = 0; }
+    else if (c === '百') { result += (cur || 1) * 100; cur = 0; }
+    else return NaN;
+  }
+  return result + cur;
+}
+
+function judgeAnswer(recognizedList, answerCandidates, expectedNum) {
   for (const raw of recognizedList) {
     const norm = normalizeText(raw);
+    // アラビア数字として一致
+    const asNum = parseInt(norm, 10);
+    if (!isNaN(asNum) && asNum === expectedNum) return true;
+    // 漢字数字として一致
+    const fromKanji = kanjiToNum(raw.trim());
+    if (!isNaN(fromKanji) && fromKanji === expectedNum) return true;
+    // ひらがな候補と一致
     for (const cand of answerCandidates) {
-      if (norm === normalizeText(cand)) return true;
-      // 部分一致も許容（認識にノイズが混じる場合）
-      if (norm.includes(normalizeText(cand)) || normalizeText(cand).includes(norm)) return true;
+      const nc = normalizeText(cand);
+      if (norm === nc) return true;
+      if (norm.includes(nc) || nc.includes(norm)) return true;
     }
   }
   return false;
@@ -1231,11 +1249,16 @@ function handleStart() {
 
 function afterSpeak() {
   const { level, altMode } = gameState;
+
+  // レベル1: ディクテーションなし、TTS発声確認のみ → 自動正解
   if (level === 1) {
-    setStatus('おなじように いってみよう！ 🗣');
-  } else {
-    setStatus('こたえを いってね！ 🗣');
+    gameState.state = 'judged';
+    setStatus('');
+    onCorrect();
+    return;
   }
+
+  setStatus('こたえを いってね！ 🗣');
 
   if (altMode) {
     // 代替モードは buttons でハンドル済み
@@ -1270,7 +1293,7 @@ function handleRecognitionResult(results) {
       onNoSpeech();
     }
   } else {
-    const correct = judgeAnswer(results, q.answerCandidates);
+    const correct = judgeAnswer(results, q.answerCandidates, q.ans);
     const said = results[0] || '';
     if (correct) {
       setRecResult(`「${said}」 ✓`, 'correct');
@@ -1346,7 +1369,7 @@ function onCorrect() {
   gameState.correctCount++;
   setJudgeIcon('⭕');
   setStatus('せいかい！ すごい！ 🎉');
-  speak('せいかい', null, null, 1.0);
+  speak('せいかい', null, null, 0.5);
   setBtnArea(`<button class="btn-secondary" onclick="goNextQuestion()" aria-label="つぎへ">▶ つぎへ</button>`);
   showPopup('⭕', 'せいかい！', 800);
 }
