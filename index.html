@@ -1111,6 +1111,8 @@ function startLevel(level) {
   }
 
   renderGameScreen();
+  // スタートボタンなし: 画面描画後すぐに自動スタート
+  setTimeout(() => handleStart(), 200);
 }
 
 // ===== 配列シャッフル =====
@@ -1172,13 +1174,11 @@ function renderGameScreen() {
         <div class="question-formula" id="q-formula">${formulaHtml}</div>
         <div class="question-reading" id="q-reading"></div>
       </div>
-      <div class="status-msg" id="status-msg">▶ スタートをおしてね</div>
+      <div class="status-msg" id="status-msg"></div>
       <div class="recognition-result" id="rec-result">　</div>
       <div class="judge-icon" id="judge-icon"></div>
       ${altMode ? altChoicesHTML : ''}
-      <div class="btn-group" id="btn-area">
-        <button class="btn-primary" id="btn-start" onclick="handleStart()" aria-label="スタート">▶ スタート</button>
-      </div>
+      <div class="btn-group" id="btn-area"></div>
     </div>
   `;
 }
@@ -1261,21 +1261,23 @@ function afterSpeak() {
     return;
   }
 
-  // 音声認識開始（遅延なし）
+  // TTS残響対策: 0.5秒後に認識開始
   gameState.state = 'recognizing';
-  setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
-  startRecognition(
-    (results) => handleRecognitionResult(results),
-    (errType) => handleRecognitionError(errType),
-    (type) => handleRecognitionNoMatch(type)
-  );
-
-  // 2秒待って認識されなければ no-speech 扱い
   setTimeout(() => {
     if (gameState.state !== 'recognizing') return;
-    stopRecognition();
-    handleRecognitionNoMatch('no-speech');
-  }, 2000);
+    setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
+    startRecognition(
+      (results) => handleRecognitionResult(results),
+      (errType) => handleRecognitionError(errType),
+      (type) => handleRecognitionNoMatch(type)
+    );
+    // 2秒待って認識されなければ no-speech 扱い
+    setTimeout(() => {
+      if (gameState.state !== 'recognizing') return;
+      stopRecognition();
+      handleRecognitionNoMatch('no-speech');
+    }, 2000);
+  }, 500);
 }
 
 // ===== 音声認識結果処理 =====
@@ -1313,23 +1315,23 @@ function handleRecognitionError(errType) {
     setStatus('⚠ マイクを使えません。ボタンモードにきりかえます。');
     setTimeout(() => { startLevel(gameState.level); }, 1500);
   } else {
-    setStatus('⚠ エラーがおきました。もういちど！');
-    setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🔄 もういちど</button>`);
+    setStatus('⚠ エラー。もういちど！');
+    setTimeout(() => handleStart(), 1000);
   }
 }
 
 function handleRecognitionNoMatch(type) {
   gameState.state = 'idle';
-  setStatus('きこえなかったよ… もういちど いってね 🎤');
+  setStatus('きこえなかったよ… もういちど 🎤');
   setRecResult('', '');
-  setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🎤 もういちど</button>`);
+  setTimeout(() => handleStart(), 800);
 }
 
 function onNoSpeech() {
   gameState.state = 'idle';
   setStatus('きこえなかったよ… もういちど！');
   setRecResult('', '');
-  setBtnArea(`<button class="btn-primary" onclick="handleStart()" aria-label="もういちど">🎤 もういちど いってみよう</button>`);
+  setTimeout(() => handleStart(), 800);
 }
 
 // ===== 代替モード処理 =====
@@ -1369,9 +1371,12 @@ function onCorrect() {
   gameState.correctCount++;
   setJudgeIcon('⭕');
   setStatus('せいかい！ すごい！ 🎉');
-  speak('せいかい', null, null, 0.5);
-  setBtnArea(`<button class="btn-secondary" onclick="goNextQuestion()" aria-label="つぎへ">▶ つぎへ</button>`);
   showPopup('⭕', 'せいかい！', 800);
+  speak('せいかい', () => {
+    setTimeout(() => goNextQuestion(), 300);
+  }, () => {
+    setTimeout(() => goNextQuestion(), 300);
+  }, 0.5);
 }
 
 function onWrong() {
@@ -1391,8 +1396,11 @@ function onWrong() {
 
   setJudgeIcon('❌');
   setStatus(`ざんねん… こたえは「${q.ans}」だよ`);
-  speak(`こたえは${correctYomi}`, null, null);
-  setBtnArea(`<button class="btn-secondary" onclick="goNextQuestion()" aria-label="つぎへ">▶ つぎへ</button>`);
+  speak(`こたえは${correctYomi}`, () => {
+    setTimeout(() => goNextQuestion(), 300);
+  }, () => {
+    setTimeout(() => goNextQuestion(), 300);
+  });
 }
 
 // ===== 次の問題へ =====
@@ -1435,7 +1443,7 @@ function renderNextQuestion() {
   const pi = document.querySelector('.progress-info');
   if (pi) pi.innerHTML = `<span>もんだい ${qIndex + 1} / ${total}</span><span>せいかい ${correctCount}</span>`;
 
-  setStatus('▶ スタートをおしてね');
+  setStatus('');
   setRecResult('', '');
   setJudgeIcon('');
 
@@ -1450,7 +1458,9 @@ function renderNextQuestion() {
     }
   }
 
-  setBtnArea(`<button class="btn-primary" id="btn-start" onclick="handleStart()" aria-label="スタート">▶ スタート</button>`);
+  setBtnArea('');
+  // 次の問題も自動スタート
+  setTimeout(() => handleStart(), 300);
 }
 
 /* ============================================================
