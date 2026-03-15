@@ -754,9 +754,10 @@ function getDanProgress(dan) {
   return progress[`dan${dan}`] || { maxClear: 0 };
 }
 
-// 最高クリアレベルから解放レベル計算（テスト用: 全レベル解放）
+/// 最高クリアレベルから解放レベル計算: maxClear+1 まで挑戦可
 function getUnlockLevel(dan) {
-  return MAX_LEVEL;
+  const mc = getDanProgress(dan).maxClear;
+  return Math.min(mc + 1, MAX_LEVEL);
 }
 
 // 総星数
@@ -1265,7 +1266,9 @@ function afterSpeak() {
   gameState.state = 'recognizing';
   setTimeout(() => {
     if (gameState.state !== 'recognizing') return;
-    setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
+    if (level !== 1) {
+      setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
+    }
     startRecognition(
       (results) => handleRecognitionResult(results),
       (errType) => handleRecognitionError(errType),
