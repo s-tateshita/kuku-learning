@@ -703,12 +703,15 @@ const KUKU_DATA = (() => {
     for (let i = 0; i < 9; i++) {
       const mul = i + 1;
       const ans = dan * mul;
+      const candidates = ANSWER_MAP[ans] || [String(ans)];
+      const ansYomi = candidates.find(c => /^[ぁ-ん]+$/.test(c)) || String(ans);
       data[dan].push({
         dan, mul, ans,
         formula: `${dan} × ${mul}`,
         fullYomi: FULL_YOMI[dan][i],
         halfYomi: HALF_YOMI[dan][i],
-        answerCandidates: ANSWER_MAP[ans] || [String(ans)]
+        answerCandidates: candidates,
+        ansYomi
       });
     }
   }
@@ -916,15 +919,20 @@ function startRecognition(onResult, onError, onNoMatch) {
     rec.interimResults = false;
     rec.maxAlternatives = 5;
     activeRecognition = rec;
+    let handled = false;
     rec.onresult = (e) => {
+      if (handled) return;
+      handled = true;
+      activeRecognition = null;
       const results = [];
       for (let i = 0; i < e.results[0].length; i++) {
         results.push(e.results[0][i].transcript.trim());
       }
-      activeRecognition = null;
       onResult(results);
     };
     rec.onerror = (e) => {
+      if (handled) return;
+      handled = true;
       activeRecognition = null;
       console.warn('SpeechRec error:', e.error);
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -936,7 +944,12 @@ function startRecognition(onResult, onError, onNoMatch) {
         if(onError) onError(e.error);
       }
     };
-    rec.onnomatch = () => { activeRecognition = null; if(onNoMatch) onNoMatch('no-match'); };
+    rec.onnomatch = () => {
+      if (handled) return;
+      handled = true;
+      activeRecognition = null;
+      if(onNoMatch) onNoMatch('no-match');
+    };
     rec.start();
   } catch(e) {
     activeRecognition = null;
@@ -949,8 +962,11 @@ function startRecognition(onResult, onError, onNoMatch) {
    答え判定
 ============================================================ */
 function normalizeText(s) {
+  const kanjiMap = {'一':'いち','二':'に','三':'さん','四':'し','五':'ご',
+    '六':'ろく','七':'しち','八':'はち','九':'く','十':'じゅう','百':'ひゃく'};
   return s.replace(/[\s　。、！？!?,.]/g, '').toLowerCase()
-    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[一二三四五六七八九十百]/g, c => kanjiMap[c] || c);
 }
 
 function judgeAnswer(recognizedList, answerCandidates) {
@@ -1225,14 +1241,17 @@ function afterSpeak() {
     // 代替モードは buttons でハンドル済み
     return;
   }
-  // 音声認識開始
+  // 音声認識開始（TTS残響対策で少し待つ）
   gameState.state = 'recognizing';
   setStatus('<span class="rec-animation"><span class="rec-dot"></span><span class="rec-dot"></span><span class="rec-dot"></span></span> にんしきちゅう…');
-  startRecognition(
-    (results) => handleRecognitionResult(results),
-    (errType) => handleRecognitionError(errType),
-    (type) => handleRecognitionNoMatch(type)
-  );
+  setTimeout(() => {
+    if (gameState.state !== 'recognizing') return;
+    startRecognition(
+      (results) => handleRecognitionResult(results),
+      (errType) => handleRecognitionError(errType),
+      (type) => handleRecognitionNoMatch(type)
+    );
+  }, 400);
 }
 
 // ===== 音声認識結果処理 =====
@@ -1335,7 +1354,7 @@ function onCorrect() {
 function onWrong() {
   const { level, questions, qIndex } = gameState;
   const q = questions[qIndex];
-  const correctYomi = q.fullYomi;
+  const correctYomi = q.ansYomi;
 
   if (level === 5) {
     // レベル5: 即失敗
